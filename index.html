@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>JeMPRoT NAS Synology</title>
+    <style>
+        /* CSS Reset & Base Variables */
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --public-color: #2ea043;
+            --public-glow: rgba(46, 160, 67, 0.4);
+            --private-color: #da3633;
+            --private-glow: rgba(218, 54, 51, 0.4);
+            --glass-bg: rgba(22, 27, 34, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            
+            /* Warna khusus Footer dari script yang diberikan */
+            --slate-500: #64748b;
+            --slate-400: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh; /* Kunci iframe agar 100% layar */
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Canvas Background */
+        #network-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Main Wrapper */
+        .wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            z-index: 1;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        /* Header Styling & Animasi Compact */
+        header {
+            margin-bottom: 4rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Mode Compact saat Iframe terbuka */
+        header.compact {
+            margin-bottom: 1rem;
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        header.compact h1 {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        header.compact .logo-main {
+            height: 30px; /* Logo mengecil */
+        }
+
+        h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 1px;
+            transition: all 0.4s ease;
+        }
+
+        .logo-main {
+            height: 55px;
+            filter: brightness(4) contrast(1.5) saturate(1.5) drop-shadow(0 0 10px rgba(56,189,248,0.8));
+            animation: pulseGlow 3s infinite alternate;
+            transition: height 0.4s ease;
+        }
+
+        @keyframes pulseGlow {
+            from { filter: brightness(4) contrast(1.5) saturate(1.5) drop-shadow(0 0 8px rgba(56,189,248,0.5)); }
+            to { filter: brightness(4) contrast(1.5) saturate(1.5) drop-shadow(0 0 18px rgba(56,189,248,1)); }
+        }
+
+        .cursor { font-weight: 800; animation: blink 1s step-end infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* Tombol Kembali (Hidden secara default) */
+        #btn-back {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid var(--glass-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s;
+        }
+
+        #btn-back:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Cards Container */
+        .cards-container {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 800px;
+            margin: auto 0; /* Auto margin agar selalu di tengah secara vertikal */
+        }
+
+        /* Glassmorphism Card Style */
+        .card {
+            text-decoration: none;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 280px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+        }
+
+        .card:hover { transform: translateY(-5px); }
+        .card.public { border-bottom: 3px solid var(--public-color); }
+        .card.public:hover { box-shadow: 0 10px 30px var(--public-glow); border-color: var(--public-color); }
+        .card.private { border-bottom: 3px solid var(--private-color); }
+        .card.private:hover { box-shadow: 0 10px 30px var(--private-glow); border-color: var(--private-color); }
+
+        .icon { width: 48px; height: 48px; margin-bottom: 10px; }
+        .card.public .icon { stroke: var(--public-color); }
+        .card.private .icon { stroke: var(--private-color); }
+
+        .card h2 { font-size: 1.5rem; color: #ffffff; margin: 0; font-weight: 600; }
+        .card p { font-size: 0.9rem; color: #8b949e; }
+
+        /* Iframe Container (Hidden secara default) */
+        #iframe-container {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            flex: 1;
+            background: #fff; /* Background putih agar web Synology tidak transparan */
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #nas-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Footer Styling */
+        footer {
+            width: 100%;
+            padding: 1rem 2rem; /* Diperkecil sedikit paddingnya */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            z-index: 1;
+            flex-shrink: 0;
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            color: var(--slate-500);
+            text-align: center;
+        }
+
+        .logo-footer {
+            height: 24px;
+            vertical-align: middle;
+            margin: 0 6px;
+            object-fit: contain;
+            filter: brightness(4) contrast(1.5) saturate(1.5) drop-shadow(0 0 10px rgba(56,189,248,0.8));
+        }
+
+        .footer-highlight {
+            color: var(--slate-400);
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .logo-main { height: 45px; }
+            .cards-container { gap: 1.5rem; }
+            .card { padding: 2rem 1.5rem; max-width: 100%; }
+            .wrapper { padding: 1rem; }
+            header.compact h1 { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="network-canvas"></canvas>
+
+    <div class="wrapper">
+        <header id="main-header">
+            <!-- Tombol Kembali untuk mode Iframe -->
+            <button id="btn-back">⬅ Kembali</button>
+            
+            <h1>
+                <img src="https://i.ibb.co.com/KpqwmHd6/Logo-Jemprot-2-1-removebg-preview.png" alt="JeMPRoT" class="logo-main">
+                NAS Synology<span class="cursor">_</span>
+            </h1>
+            
+            <!-- Elemen kosong untuk menyeimbangkan layout Flex saat mode compact -->
+            <div style="width: 90px; display: none;" id="header-spacer"></div>
+        </header>
+
+        <!-- Menu Utama (Cards) -->
+        <main class="cards-container" id="menu-view">
+            <!-- href tetap ada tapi aksi klik ditangani oleh JavaScript -->
+            <a href="https://gofile.me/7CBpz/936XWDHaD" class="card public link-nas">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                </svg>
+                <h2>Public</h2>
+                <p>Akses untuk umum</p>
+            </a>
+
+            <a href="https://gofile.me/7CBpz/yysqYlE18" class="card private link-nas">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <h2>Private</h2>
+                <p>Akses terbatas</p>
+            </a>
+        </main>
+
+        <!-- Container Iframe -->
+        <div id="iframe-container">
+            <iframe id="nas-iframe" src="" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <span class="footer-highlight">Digitally Shaped by</span> 
+            <img src="https://i.ibb.co.com/KpqwmHd6/Logo-Jemprot-2-1-removebg-preview.png" alt="Logo JeMPROT" class="logo-footer"> 
+            <span class="footer-highlight">Powered by Synology NAS</span>
+        </div>
+    </footer>
+
+    <!-- Script JavaScript -->
+    <script>
+        // --- LOGIKA ANIMASI & IFRAME ---
+        const links = document.querySelectorAll('.link-nas');
+        const menuView = document.getElementById('menu-view');
+        const iframeContainer = document.getElementById('iframe-container');
+        const nasIframe = document.getElementById('nas-iframe');
+        const header = document.getElementById('main-header');
+        const btnBack = document.getElementById('btn-back');
+        const headerSpacer = document.getElementById('header-spacer');
+
+        // Event saat Kartu diklik
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault(); // Mencegah buka tab baru
+                
+                const url = this.getAttribute('href'); // Ambil link Synology
+                nasIframe.src = url; // Masukkan ke dalam Iframe
+                
+                // Ubah Tampilan Halaman
+                menuView.style.display = 'none';
+                iframeContainer.style.display = 'block';
+                
+                // Perkecil Header
+                header.classList.add('compact');
+                btnBack.style.display = 'block';
+                headerSpacer.style.display = 'block';
+            });
+        });
+
+        // Event saat tombol Kembali diklik
+        btnBack.addEventListener('click', function() {
+            // Kosongkan iframe agar loading berhenti
+            nasIframe.src = '';
+            
+            // Kembalikan Tampilan Halaman
+            iframeContainer.style.display = 'none';
+            menuView.style.display = 'flex';
+            
+            // Kembalikan ukuran Header
+            header.classList.remove('compact');
+            btnBack.style.display = 'none';
+            headerSpacer.style.display = 'none';
+        });
+
+        // --- BACKGROUND NETWORK NODES ---
+        const canvas = document.getElementById('network-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height, particles;
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            particles = [];
+            
+            const particleCount = width < 600 ? 35 : 75;
+
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    radius: Math.random() * 1.5 + 0.5
+                });
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(201, 209, 217, 0.6)';
+                ctx.fill();
+
+                for (let j = index + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p.x - p2.x;
+                    const dy = p.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 130) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(201, 209, 217, ${0.15 - dist/866})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', init);
+        init();
+        draw();
+    </script>
+</body>
+</html>
