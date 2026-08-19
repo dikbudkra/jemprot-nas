@@ -233,7 +233,7 @@
         </header>
 
         <main class="cards-container">
-            <a href="https://gofile.me/7CBpz/936XWDHaD" class="card public" target="_blank" rel="noopener noreferrer">
+            <a href="https://gofile.me/7CBpz/936XWDHaD" class="card public" rel="noopener noreferrer">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
@@ -242,7 +242,7 @@
                 <p>Akses untuk umum</p>
             </a>
 
-            <a href="https://gofile.me/7CBpz/yysqYlE18" class="card private" target="_blank" rel="noopener noreferrer">
+            <a href="https://gofile.me/7CBpz/yysqYlE18" class="card private" rel="noopener noreferrer">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
